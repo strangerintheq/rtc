@@ -1,7 +1,15 @@
-import {UserId} from "../app/types";
+
+export type ConferenceId = `conf_${string}`;
+
+export type UserId = `user_${string}`;
+
+export type User = {
+    userId: UserId;
+    connection?: Connection;
+    tracks: MediaStreamTrack[];
+}
 
 export interface Conference {
-    connect();
     setUsers();
     addUser();
     removeUser();
@@ -22,3 +30,4 @@ export interface ConnectionState {
     localUserId: UserId;
     remoteUserId: UserId;
 }
+

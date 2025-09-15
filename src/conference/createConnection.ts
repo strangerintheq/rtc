@@ -1,5 +1,4 @@
-import {UserId} from "../app/types";
-import {Connection, ConnectionState} from "./types";
+import {Connection, ConnectionState, UserId} from "./types";
 
 declare global {
     interface Window {

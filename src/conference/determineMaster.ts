@@ -1,4 +1,4 @@
-import {UserId} from "../app/types";
+import {UserId} from "./types";
 
 export function determineMaster(localUserId: UserId, remoteUserId:UserId): boolean {
     return xorShift128(localUserId) < xorShift128(remoteUserId);

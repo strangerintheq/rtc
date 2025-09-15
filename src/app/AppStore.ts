@@ -1,5 +1,4 @@
 import {create} from "zustand";
-import {ConferenceId, User, UserId} from "./types";
 import {Subscription} from "centrifuge";
 import {log} from "./log";
 import {createConnection} from "../conference/createConnection";
@@ -10,6 +9,7 @@ import {ChannelEvent} from "@chessclub/realtime_infrastructure/src/RealtimeInfra
 import {RtcMessage, RtcChannel} from "../conference/RtcChannel";
 import {determineMaster} from "../conference/determineMaster";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
+import {ConferenceId, User, UserId} from "../conference/types";
 
 export interface AppStore {
     conferenceId?: ConferenceId;

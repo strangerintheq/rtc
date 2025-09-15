@@ -1,6 +1,6 @@
 import {connectToCentrifuge} from "@chessclub/realtime_infrastructure";
 import {centrifugeInstance} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
-import {UserId} from "./types";
+import {UserId} from "../conference/types";
 
 export async function initSignalling(): Promise<UserId> {
     const url = 'https://chessclub.spb.ru/rest/auth.rest.jwt';
