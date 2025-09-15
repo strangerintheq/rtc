@@ -1,4 +1,4 @@
-import {connectToCentrifuge} from "@chessclub/realtime_infrastructure";
+import {connectToCentrifuge, joinChannelIfAlreadyNot} from "@chessclub/realtime_infrastructure";
 import {centrifugeInstance, ChannelEvent} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
 import {ConferenceId, RtcMessage, Signalling, SignallingChannel, UserId} from "../conference/types";
 import {addCentrifugeEventListener} from "@chessclub/realtime_infrastructure/src/public/addCentrifugeEventListener";
@@ -6,7 +6,6 @@ import {emitCentrifugeEvent} from "@chessclub/realtime_infrastructure/src/public
 import {initChannel} from "@chessclub/realtime_infrastructure/src/public/initChannel";
 
 export let RtcChannel = {
-    // NEGOTIATE: new ChannelEvent<Route<void>>(),
     ICE_CANDIDATE: new ChannelEvent<RtcMessage<RTCIceCandidate>>(),
     OFFER: new ChannelEvent<RtcMessage<RTCSessionDescriptionInit>>(),
     ANSWER: new ChannelEvent<RtcMessage<RTCSessionDescriptionInit>>(),
@@ -14,14 +13,28 @@ export let RtcChannel = {
 
 initChannel(RtcChannel);
 
-export function createSignalling(conferenceId: ConferenceId): Signalling {
+export function createSignalling(currentUserId: UserId, conferenceId: ConferenceId): Signalling {
+
     const offListeners: (() => void)[] = []
     const key = {key: "conf_" + conferenceId};
+
     return {
         off: () => offListeners.forEach(off => off()),
         offer: createSignallingChannel(key, RtcChannel.OFFER, offListeners),
         answer: createSignallingChannel(key, RtcChannel.ANSWER, offListeners),
-        iceCandidate: createSignallingChannel(key, RtcChannel.ICE_CANDIDATE, offListeners)
+        iceCandidate: createSignallingChannel(key, RtcChannel.ICE_CANDIDATE, offListeners),
+        onJoin: null,
+        onLeave: null,
+        async connect() {
+            const {subscription} = await joinChannelIfAlreadyNot(key);
+            subscription.on('join', e => this.onJoin(e.info.client as UserId));
+            subscription.on('leave', e => this.onLeave(e.info.client as UserId));
+            const presence = await subscription.presence();
+            Object.values(presence.clients)
+                .map(c => c.client as UserId)
+                .filter(id => id !== currentUserId)
+                .forEach(this.onJoin);
+        }
     }
 }
 

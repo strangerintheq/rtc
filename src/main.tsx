@@ -10,7 +10,7 @@ import {createMediaStreamPersistentStore} from "./media-stream/createMediaStream
     await useMediaStreamStore.getState().restore(createMediaStreamPersistentStore());
     createRoot(document.getElementById('root')).render(<App/>);
     const userId = await initSignalling();
-    useAppStore.getState().enter(userId, "deadbeef")
+    useAppStore.getState().enter(userId, "deadbeefx")
 })();
 
 

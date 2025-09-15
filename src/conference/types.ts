@@ -8,13 +8,9 @@ export type User = {
 }
 
 export interface Conference {
-    connect(
-        currentUserId: UserId,
-        conferenceId: ConferenceId,
-        signalling: Signalling
-    ): Promise<void>;
-
+    connect(currentUserId: UserId, signalling: Signalling): Promise<void>;
     disconnect(): Promise<void>;
+    updateTracks(tracks: MediaStreamTrack[]): void;
 }
 
 export interface RtcMessage<T> {
@@ -24,15 +20,13 @@ export interface RtcMessage<T> {
 }
 
 export interface Signalling {
-    onLeave(callback: (userId: UserId) => void);
-    onJoin(callback: (userId: UserId) => void);
-    connect(conferenceId: ConferenceId): void;
+    onLeave: (userId: UserId) => Promise<void>;
+    onJoin: (userId: UserId) => Promise<void>;
+    connect(): Promise<void>;
     offer: SignallingChannel<RTCSessionDescription>;
     answer: SignallingChannel<RTCSessionDescription>;
     iceCandidate: SignallingChannel<RTCIceCandidate>;
     off();
-
-
 }
 
 export interface SignallingChannel<T> {

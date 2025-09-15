@@ -7,13 +7,16 @@ import {determineMaster} from "./determineMaster";
 export function createConference(log: Logger): Conference {
 
     const state = {
-        conferenceId: null as ConferenceId,
         currentUserId: null as UserId,
         signalling: null as Signalling,
         otherUsers: [] as User[]
     };
 
+    const getUserById = (userId: UserId) => state.otherUsers.find(u => u.userId === userId)
+
     async function join(userId: UserId) {
+        if (getUserById(userId))
+            return;
         const user: User = {userId, tracks: []};
         state.otherUsers.push(user);
         if (determineMaster(state.currentUserId, userId)) {
@@ -23,9 +26,11 @@ export function createConference(log: Logger): Conference {
     }
 
     async function leave(userId: UserId) {
-        const user = state.otherUsers.find(u => u.userId === userId);
-        await user.connection.disconnect();
-        state.otherUsers.splice(state.otherUsers.indexOf(user), 1);
+        const user = getUserById(userId);
+        if (user) {
+            await user.connection.disconnect();
+            state.otherUsers.splice(state.otherUsers.indexOf(user), 1);
+        }
     }
 
     async function createConnectionToUser(user: User, master: boolean) {
@@ -86,19 +91,22 @@ export function createConference(log: Logger): Conference {
     }
 
     return {
-        async connect(currentUserId: UserId, conferenceId: ConferenceId, signalling: Signalling) {
+        async connect(currentUserId: UserId,  signalling: Signalling) {
             state.currentUserId = currentUserId;
-            state.conferenceId = conferenceId;
             state.signalling = signalling;
-            signalling.onJoin(join);
-            signalling.onLeave(leave);
+            signalling.onJoin = join;
+            signalling.onLeave = leave;
             signalling.offer.on(forUser(processOffer));
             signalling.answer.on(forUser(processAnswer));
             signalling.iceCandidate.on(forUser(processCandidate));
-            signalling.connect(conferenceId);
+            await signalling.connect();
         },
         async disconnect() {
 
         },
+
+        updateTracks(tracks: MediaStreamTrack[]) {
+            state.otherUsers.forEach(u => u.connection.updateTracks(tracks))
+        }
     }
 }
