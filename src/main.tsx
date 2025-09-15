@@ -1,28 +1,17 @@
 import React from "react";
 import {App} from "./app/App";
-import {getClientToken} from "./app/getClientToken";
 import {createRoot} from "preact/compat/client";
-import {connectToCentrifuge} from "@chessclub/realtime_infrastructure";
-import {ContainerNode} from "preact";
-import {ConferenceId, UserId} from "./app/types";
-import {centrifugeInstance} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
+import {initSignalling} from "./app/signalling";
+import {useMediaStreamStore} from "./media-stream/MediaStreamStore";
 import {useAppStore} from "./app/AppStore";
+import {createMediaStreamPersistentStore} from "./app/createMediaStreamPersistentStore";
 
-
-const root = document.getElementById('root') as ContainerNode;
-createRoot(root).render(<App/>);
-
-(async function (){
-    const url = 'https://chessclub.spb.ru/rest/auth.rest.jwt';
-    const xhr = new XMLHttpRequest();
-    const {session} = await getClientToken(xhr, url, "userId", 'test-client');
-    const centrifugeUrl = 'wss://chessclub.spb.ru/centrifugo/connection/websocket';
-    connectToCentrifuge(centrifugeUrl, session);
-    centrifugeInstance.socket.on('connected', () => {
-        const userId = centrifugeInstance.socketId as UserId;
-        const conferenceId = 'deadbeef' as ConferenceId;
-        useAppStore.getState().enter(userId, conferenceId)
-    })
+(async () => {
+    await useMediaStreamStore.getState().restore(createMediaStreamPersistentStore());
+    createRoot(document.getElementById('root')).render(<App/>);
+    const userId = await initSignalling();
+    useAppStore.getState().enter(userId, "deadbeef")
 })();
+
 
 

@@ -1,17 +1,15 @@
 import {create} from "zustand";
-import {MediaQuality} from "./MediaQuality";
-import {MediaStreamStoreApi} from "./MediaStreamStoreApi";
+import {MediaQuality, MediaStreamStoreApi, MediaStreamStorePersistentStore, TrackType} from "./MediaStreamStoreApi";
 import {DesktopConstraintsFactory} from "./constraints/DesktopConstraintsFactory";
 import {MicrophoneConstraintsFactory} from "./constraints/MicrophoneConstraintsFactory";
 import {CameraConstraintsFactory} from "./constraints/CameraConstraintsFactory";
-
-
-type TrackType = "desktopStreamTrack" | "cameraStreamTrack" | "microphoneStreamTrack"
 
 export const useMediaStreamStore = create<MediaStreamStoreApi>((
     set,
     get
 ) => {
+
+    let persistentState: MediaStreamStorePersistentStore;
 
     async function applyQuality(track: MediaStreamTrack, constraints: MediaTrackConstraints) {
         track && await track.applyConstraints(constraints);
@@ -24,9 +22,15 @@ export const useMediaStreamStore = create<MediaStreamStoreApi>((
             if (!track)
                 return;
             track.stop();
-            state[trackType] = null
+            state[trackType] = null;
+            localStorage.removeItem(trackType);
         })
         set(state)
+    }
+
+    function update(track: MediaStreamTrack, trackType: TrackType) {
+        set({[trackType]: track});
+        persistentState.setEnabled(trackType, !!track);
     }
 
     return {
@@ -38,40 +42,44 @@ export const useMediaStreamStore = create<MediaStreamStoreApi>((
             await applyQuality(desktopStreamTrack, DesktopConstraintsFactory(quality));
             await applyQuality(microphoneStreamTrack, MicrophoneConstraintsFactory(quality));
             set({quality});
+            persistentState?.setQuality(quality);
         },
+
         async startCameraStream() {
             const cameraStream = await navigator.mediaDevices.getUserMedia({
                 audio: false, video: CameraConstraintsFactory(get().quality)
             });
-            const cameraStreamTrack = cameraStream.getTracks()[0];
-            set({cameraStreamTrack});
+            update(cameraStream.getTracks()[0], TrackType.cameraStreamTrack);
         },
+
         async stopCameraStream() {
-            stop("cameraStreamTrack")
+            stop(TrackType.cameraStreamTrack)
         },
+
         async startDesktopStream() {
             const desktopStream = await navigator.mediaDevices.getDisplayMedia({
                 audio: false, video: DesktopConstraintsFactory(get().quality)
             });
-            const desktopStreamTrack = desktopStream.getTracks()[0];
-            set({desktopStreamTrack});
+            update(desktopStream.getTracks()[0], TrackType.desktopStreamTrack);
         },
+
         async stopDesktopStream() {
-            stop("desktopStreamTrack")
+            stop(TrackType.desktopStreamTrack)
         },
+
         async startMicrophoneStream() {
             const microphoneStream = await navigator.mediaDevices.getUserMedia({
                 video: false, audio: MicrophoneConstraintsFactory(get().quality)
             });
-            const microphoneStreamTrack = microphoneStream.getTracks()[0];
-            set({microphoneStreamTrack});
+            update(microphoneStream.getTracks()[0], TrackType.microphoneStreamTrack);
         },
+
         async stopMicrophoneStream() {
-            stop("microphoneStreamTrack")
+            stop(TrackType.microphoneStreamTrack)
         },
 
         stop() {
-            stop("cameraStreamTrack", "desktopStreamTrack", "microphoneStreamTrack")
+            stop(TrackType.cameraStreamTrack, TrackType.microphoneStreamTrack, TrackType.microphoneStreamTrack);
         },
 
         getActualTracks(noAudio?: boolean): MediaStreamTrack[] {
@@ -84,6 +92,17 @@ export const useMediaStreamStore = create<MediaStreamStoreApi>((
             if (!noAudio && microphoneStreamTrack)
                 actualTracks.push(microphoneStreamTrack)
             return actualTracks;
+        },
+
+        async restore(state: MediaStreamStorePersistentStore) {
+            persistentState = state;
+            set({quality: state.getQuality()});
+            if (persistentState.isEnabled(TrackType.cameraStreamTrack))
+                await get().startCameraStream();
+            if (persistentState.isEnabled(TrackType.microphoneStreamTrack))
+                await get().startMicrophoneStream();
+            if (persistentState.isEnabled(TrackType.desktopStreamTrack))
+                await get().startDesktopStream();
         }
     }
 });

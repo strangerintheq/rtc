@@ -2,13 +2,13 @@ import {create} from "zustand";
 import {ConferenceId, User, UserId} from "./types";
 import {Subscription} from "centrifuge";
 import {log} from "./log";
-import {createConnection} from "../connection/createConnection";
+import {createConnection} from "../conference/createConnection";
 import {joinChannelIfAlreadyNot} from "@chessclub/realtime_infrastructure";
 import {addCentrifugeEventListener} from "@chessclub/realtime_infrastructure/src/public/addCentrifugeEventListener";
 import {emitCentrifugeEvent} from "@chessclub/realtime_infrastructure/src/public/emitCentrifugeEvent";
 import {ChannelEvent} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
-import {Route, RtcChannel} from "../connection/RtcChannel";
-import {determineMaster} from "../connection/determineMaster";
+import {RtcMessage, RtcChannel} from "../conference/RtcChannel";
+import {determineMaster} from "../conference/determineMaster";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 
 export interface AppStore {
@@ -17,8 +17,7 @@ export interface AppStore {
     otherUsers: User[];
 
     updateTracks();
-
-    enter(currentUser: UserId, conferenceId: ConferenceId);
+    enter(currentUser: UserId, conferenceId: string);
 }
 
 export const useAppStore = create<AppStore>((
@@ -26,9 +25,9 @@ export const useAppStore = create<AppStore>((
     get
 ) => {
 
-    function on<T>(e: ChannelEvent<Route<T>>, callback: (payload: Route<T>) => void) {
+    function on<T>(e: ChannelEvent<RtcMessage<T>>, callback: (payload: RtcMessage<T>) => void) {
         addCentrifugeEventListener(makeChannelKey(get().conferenceId), e,
-            (r: Route<T>) => r.to === get().currentUserId && callback(r))
+            (r: RtcMessage<T>) => r.to === get().currentUserId && callback(r))
     }
 
     async function emit<T>(e: ChannelEvent<T>, payload: T) {
@@ -82,13 +81,13 @@ export const useAppStore = create<AppStore>((
         await handleJoined(ids);
     }
 
-    function filterRoute<P>(callback: (user: User, payload: P) => void): (route: Route<P>) => void {
-        return (route: Route<P>) => {
+    function filterRoute<P>(callback: (user: User, payload: P) => void): (route: RtcMessage<P>) => void {
+        return (route: RtcMessage<P>) => {
             callback(get().otherUsers.find(u => u.userId === route.from), route.payload);
         };
     }
 
-    function makeRoute<T>(to: User, payload?: T): Route<T> {
+    function makeRoute<T>(to: User, payload?: T): RtcMessage<T> {
         return {
             from: get().currentUserId,
             to: to.userId,
@@ -97,10 +96,10 @@ export const useAppStore = create<AppStore>((
     }
 
     async function processOffer(user: User, p: RTCSessionDescriptionInit) {
-        log("processOffer from:", user.userId)
+        log("received OFFER from:", user.userId)
         await createConnectionToUser(user, false);
         const answer = await user.connection.receiveOffer(p);
-        log("sendAnswer to:", user.userId)
+        log("send ANSWER to:", user.userId)
         await emit(RtcChannel.ANSWER, makeRoute(user, answer))
     }
 
@@ -137,7 +136,7 @@ export const useAppStore = create<AppStore>((
     }
 
     async function processAnswer(user: User, p: RTCSessionDescriptionInit) {
-        log("processAnswer from:", user.userId)
+        log("received ANSWER from:", user.userId)
         await user.connection.receiveAnswer(p);
     }
 
@@ -165,15 +164,15 @@ export const useAppStore = create<AppStore>((
             on(RtcChannel.OFFER, filterRoute(processOffer));
             on(RtcChannel.ANSWER, filterRoute(processAnswer));
             on(RtcChannel.ICE_CANDIDATE, filterRoute(processIceCandidate));
-            on(RtcChannel.NEGOTIATE, filterRoute((user) => {
-                log("received NEGOTIATE from:", user.userId)
-                sendOffer(user)
-            }))
+            // on(RtcChannel.NEGOTIATE, filterRoute((user) => {
+            //     log("received NEGOTIATE from:", user.userId)
+            //     sendOffer(user)
+            // }))
         },
 
     }
 });
 
-function makeChannelKey(conferenceId: `conferenceId_${string}`) {
-    return {key: "conf" + conferenceId};
+function makeChannelKey(conferenceId: ConferenceId) {
+    return {key: "conf_" + conferenceId};
 }

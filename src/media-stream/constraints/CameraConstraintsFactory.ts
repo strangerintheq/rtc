@@ -1,5 +1,4 @@
-import {MediaQuality} from "../MediaQuality";
-import {MediaConstraintsFactory} from "./MediaConstraintsFactory";
+import {MediaConstraintsFactory, MediaQuality} from "../MediaStreamStoreApi";
 
 const SIZES = {
     [MediaQuality.HIGH]: 1024,
@@ -13,13 +12,11 @@ const RATES = {
     [MediaQuality.LOW]: 10,
 }
 
-
 export const CameraConstraintsFactory: MediaConstraintsFactory = (quality: MediaQuality) => {
-    return true as any
-    // return {
-    //     facingMode: 'user',
-    //     width: {ideal: SIZES[quality]},
-    //     // height: {ideal: SIZES[quality] / ratio},
-    //     frameRate: {max: RATES[quality]}
-    // }
+    return {
+        facingMode: 'user',
+        width: {ideal: SIZES[quality]},
+        // height: {ideal: SIZES[quality] / ratio},
+        frameRate: {max: RATES[quality]}
+    }
 }

@@ -1,7 +1,8 @@
-import {Connection} from "../connection/types";
+import {Connection} from "../conference/types";
 
-export type ConferenceId = `conferenceId_${string}`;
-export type UserId = `userId_${string}`;
+export type ConferenceId = `conf_${string}`;
+
+export type UserId = `user_${string}`;
 
 export type User = {
     userId: UserId;

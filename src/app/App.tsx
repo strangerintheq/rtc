@@ -26,7 +26,7 @@ export function App() {
         <button onClick={toggleMic}>{mss.microphoneStreamTrack? "disable mic" : "enable mic"}</button>
         <button onClick={toggleShareScreen}>{mss.desktopStreamTrack? "share screen" : "share screen"}</button>
         <div>
-            <User tracks={mss.getActualTracks(false)} />
+            <User tracks={mss.getActualTracks(true)} />
             {otherUsers.map(user => <User tracks={user.tracks} key={user.userId}/>)}
         </div>
     </div>
@@ -50,6 +50,7 @@ function AudioTrack({track}: { track: MediaStreamTrack }) {
 
 function VideoTrack({track}: { track: MediaStreamTrack }) {
     // @ts-ignore
-    return <video width={300} muted autoPlay playsinline={true} playsInline srcObject={new MediaStream([track])}/>;
+    return <video width={300} muted autoPlay playsinline={true} playsInline
+                  srcObject={new MediaStream([track])}/>;
 }
 
