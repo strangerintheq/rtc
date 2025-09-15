@@ -6,10 +6,10 @@ import {joinChannelIfAlreadyNot} from "@chessclub/realtime_infrastructure";
 import {addCentrifugeEventListener} from "@chessclub/realtime_infrastructure/src/public/addCentrifugeEventListener";
 import {emitCentrifugeEvent} from "@chessclub/realtime_infrastructure/src/public/emitCentrifugeEvent";
 import {ChannelEvent} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
-import {RtcMessage, RtcChannel} from "../conference/RtcChannel";
 import {determineMaster} from "../conference/determineMaster";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
-import {ConferenceId, User, UserId} from "../conference/types";
+import {ConferenceId, RtcMessage, User, UserId} from "../conference/types";
+import {RtcChannel} from "./signalling";
 
 export interface AppStore {
     conferenceId?: ConferenceId;

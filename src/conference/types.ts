@@ -1,6 +1,4 @@
-
 export type ConferenceId = `conf_${string}`;
-
 export type UserId = `user_${string}`;
 
 export type User = {
@@ -10,9 +8,27 @@ export type User = {
 }
 
 export interface Conference {
-    setUsers();
     addUser();
     removeUser();
+    setSignalling(signalling: Signalling): void;
+}
+
+export interface RtcMessage<T> {
+    from: UserId;
+    to: UserId;
+    payload: T;
+}
+
+export interface Signalling {
+    offer: SignallingChannel<RtcMessage<RTCSessionDescription>>;
+    answer: SignallingChannel<RtcMessage<RTCSessionDescription>>;
+    iceCandidate: SignallingChannel<RtcMessage<RTCIceCandidate>>;
+    off();
+}
+
+export interface SignallingChannel<T> {
+    emit(payload: T): Promise<void>;
+    on(callback: (payload: T) => void):void
 }
 
 export interface Connection {

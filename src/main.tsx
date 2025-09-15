@@ -4,7 +4,7 @@ import {createRoot} from "preact/compat/client";
 import {initSignalling} from "./app/signalling";
 import {useMediaStreamStore} from "./media-stream/MediaStreamStore";
 import {useAppStore} from "./app/AppStore";
-import {createMediaStreamPersistentStore} from "./app/createMediaStreamPersistentStore";
+import {createMediaStreamPersistentStore} from "./media-stream/createMediaStreamPersistentStore";
 
 (async () => {
     await useMediaStreamStore.getState().restore(createMediaStreamPersistentStore());

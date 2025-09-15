@@ -1,6 +1,40 @@
 import {connectToCentrifuge} from "@chessclub/realtime_infrastructure";
-import {centrifugeInstance} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
-import {UserId} from "../conference/types";
+import {centrifugeInstance, ChannelEvent} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
+import {ConferenceId, RtcMessage, Signalling, SignallingChannel, UserId} from "../conference/types";
+import {addCentrifugeEventListener} from "@chessclub/realtime_infrastructure/src/public/addCentrifugeEventListener";
+import {emitCentrifugeEvent} from "@chessclub/realtime_infrastructure/src/public/emitCentrifugeEvent";
+import {initChannel} from "@chessclub/realtime_infrastructure/src/public/initChannel";
+
+export let RtcChannel = {
+    // NEGOTIATE: new ChannelEvent<Route<void>>(),
+    ICE_CANDIDATE: new ChannelEvent<RtcMessage<RTCIceCandidate>>(),
+    OFFER: new ChannelEvent<RtcMessage<RTCSessionDescriptionInit>>(),
+    ANSWER: new ChannelEvent<RtcMessage<RTCSessionDescriptionInit>>(),
+}
+
+initChannel(RtcChannel);
+
+export function createSignalling(conferenceId: ConferenceId): Signalling {
+    const offListeners: (() => void)[] = []
+    const key = {key: "conf_" + conferenceId};
+    return {
+        off: () => offListeners.forEach(off => off()),
+        offer: createSignallingChannel(key, RtcChannel.OFFER, offListeners),
+        answer: createSignallingChannel(key, RtcChannel.ANSWER, offListeners),
+        iceCandidate: createSignallingChannel(key, RtcChannel.ICE_CANDIDATE, offListeners)
+    }
+}
+
+function createSignallingChannel<T>(key, evt: ChannelEvent<T>, offListeners: (() => void)[]): SignallingChannel<any> {
+    return {
+        async emit(payload: T) {
+            await emitCentrifugeEvent(key, evt, payload);
+        },
+        on(callback: (payload: T) => void) {
+            offListeners.push(addCentrifugeEventListener(key, evt, callback))
+        }
+    }
+}
 
 export async function initSignalling(): Promise<UserId> {
     const url = 'https://chessclub.spb.ru/rest/auth.rest.jwt';
