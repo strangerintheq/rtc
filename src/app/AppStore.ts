@@ -1,6 +1,5 @@
 import {create} from "zustand";
 import {Subscription} from "centrifuge";
-import {log} from "./log";
 import {createConnection} from "../conference/createConnection";
 import {joinChannelIfAlreadyNot} from "@chessclub/realtime_infrastructure";
 import {addCentrifugeEventListener} from "@chessclub/realtime_infrastructure/src/public/addCentrifugeEventListener";
@@ -10,6 +9,7 @@ import {determineMaster} from "../conference/determineMaster";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 import {ConferenceId, RtcMessage, User, UserId} from "../conference/types";
 import {RtcChannel} from "./signalling";
+import {logger} from "./logger";
 
 export interface AppStore {
     conferenceId?: ConferenceId;
@@ -38,14 +38,14 @@ export const useAppStore = create<AppStore>((
         const leftUsers = get().otherUsers.filter(u => !newOtherUsers.includes(u.userId));
         if (!leftUsers.length)
             return;
-        log('[AppStore] handleLeft, leftUsers:', leftUsers);
+        logger('[AppStore] handleLeft, leftUsers:', leftUsers);
         leftUsers.forEach(u => u.connection.disconnect())
         set({otherUsers: get().otherUsers.filter(u => !leftUsers.includes(u))})
     }
 
     async function sendOffer(user: User) {
         const offer = await user.connection.createOffer();
-        log("send offer to:", user.userId)
+        logger("send offer to:", user.userId)
         await emit(RtcChannel.OFFER, makeRoute(user, offer));
     }
 
@@ -56,7 +56,7 @@ export const useAppStore = create<AppStore>((
         const joinedUsersIds = newOtherUsers.filter(id => !oldOtherUsersIds.includes(id))
         if (!joinedUsersIds.length)
             return;
-        log('[AppStore] handleJoined, joinedUsers:', joinedUsersIds);
+        logger('[AppStore] handleJoined, joinedUsers:', joinedUsersIds);
 
         const joinedUsers = joinedUsersIds.map(id => ({
             userId: id, tracks: []
@@ -96,17 +96,17 @@ export const useAppStore = create<AppStore>((
     }
 
     async function processOffer(user: User, p: RTCSessionDescriptionInit) {
-        log("received OFFER from:", user.userId)
+        logger("received OFFER from:", user.userId)
         await createConnectionToUser(user, false);
         const answer = await user.connection.receiveOffer(p);
-        log("send ANSWER to:", user.userId)
+        logger("send ANSWER to:", user.userId)
         await emit(RtcChannel.ANSWER, makeRoute(user, answer))
     }
 
     async function createConnectionToUser(user: User, master: boolean) {
         if (user.connection)
             return
-        log('createConnection \nsrc:', get().currentUserId, "\ndst:", user.userId);
+        logger('createConnection \nsrc:', get().currentUserId, "\ndst:", user.userId);
         user.connection = createConnection(get().currentUserId, user.userId);
         const pc = user.connection.state.peerConnection;
         pc.onicecandidate = async (e) => {
@@ -114,7 +114,7 @@ export const useAppStore = create<AppStore>((
             await emit(RtcChannel.ICE_CANDIDATE, makeRoute(user, e.candidate))
         };
         pc.onnegotiationneeded = async (e) => {
-            log("negotiation needed with:", user.userId);
+            logger("negotiation needed with:", user.userId);
             // if (master)
                 await sendOffer(user);
             // else {
@@ -123,11 +123,11 @@ export const useAppStore = create<AppStore>((
             // }
         }
         pc.onconnectionstatechange = (e: Event) => {
-            log("connection state with:", user.userId, "\n", pc.connectionState)
+            logger("connection state with:", user.userId, "\n", pc.connectionState)
             document.title = pc.connectionState
         };
         pc.ontrack = (e: RTCTrackEvent) => {
-            log("tracks changed:", user.userId, e)
+            logger("tracks changed:", user.userId, e)
             user.tracks.push(e.track);
             set({otherUsers: get().otherUsers})
         }
@@ -136,7 +136,7 @@ export const useAppStore = create<AppStore>((
     }
 
     async function processAnswer(user: User, p: RTCSessionDescriptionInit) {
-        log("received ANSWER from:", user.userId)
+        logger("received ANSWER from:", user.userId)
         await user.connection.receiveAnswer(p);
     }
 

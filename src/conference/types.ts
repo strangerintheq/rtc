@@ -8,9 +8,13 @@ export type User = {
 }
 
 export interface Conference {
-    addUser();
-    removeUser();
-    setSignalling(signalling: Signalling): void;
+    connect(
+        currentUserId: UserId,
+        conferenceId: ConferenceId,
+        signalling: Signalling
+    ): Promise<void>;
+
+    disconnect(): Promise<void>;
 }
 
 export interface RtcMessage<T> {
@@ -20,15 +24,20 @@ export interface RtcMessage<T> {
 }
 
 export interface Signalling {
-    offer: SignallingChannel<RtcMessage<RTCSessionDescription>>;
-    answer: SignallingChannel<RtcMessage<RTCSessionDescription>>;
-    iceCandidate: SignallingChannel<RtcMessage<RTCIceCandidate>>;
+    onLeave(callback: (userId: UserId) => void);
+    onJoin(callback: (userId: UserId) => void);
+    connect(conferenceId: ConferenceId): void;
+    offer: SignallingChannel<RTCSessionDescription>;
+    answer: SignallingChannel<RTCSessionDescription>;
+    iceCandidate: SignallingChannel<RTCIceCandidate>;
     off();
+
+
 }
 
 export interface SignallingChannel<T> {
-    emit(payload: T): Promise<void>;
-    on(callback: (payload: T) => void):void
+    emit(payload: RtcMessage<T>): Promise<void>;
+    on(callback: (payload: RtcMessage<T>) => void):void
 }
 
 export interface Connection {
@@ -36,8 +45,8 @@ export interface Connection {
     createOffer(): Promise<RTCSessionDescription>;
     receiveOffer(description: RTCSessionDescriptionInit): Promise<RTCSessionDescription>;
     receiveAnswer(description: RTCSessionDescriptionInit): Promise<void>;
-    disconnect();
-    iceCandidate(payload: RTCIceCandidate): void;
+    disconnect(): Promise<void>;
+    iceCandidate(payload: RTCIceCandidate): Promise<void>;
     updateTracks(tracks: MediaStreamTrack[]): Promise<void>;
 }
 
@@ -46,4 +55,6 @@ export interface ConnectionState {
     localUserId: UserId;
     remoteUserId: UserId;
 }
+
+export type Logger = (...str) => void;
 
