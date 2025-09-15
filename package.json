@@ -1,0 +1,24 @@
+{
+  "name": "vite-preact-ts-starter",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@chessclub/realtime_infrastructure": "git+https://realtime_infrastructure:2NGZxRoYXnMnTptRjrFW@gitlab.com/WAGTeam/realtime_infrastructure.git#v0.0.2",
+    "preact": "^10.27.1",
+    "zustand": "5.0.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.13",
+    "@preact/preset-vite": "^2.10.2",
+    "typescript": "~5.8.3",
+    "vite": "^7.1.5",
+    "vite-plugin-mkcert": "1.17.8",
+    "vite-plugin-static-copy": "^3.1.2"
+  }
+}
