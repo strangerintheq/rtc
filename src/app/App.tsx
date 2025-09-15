@@ -1,7 +1,6 @@
 import React from "react";
 import {useAppStore} from "./AppStore";
-import {useMediaStreamStore} from "./media-stream/MediaStreamStore";
-import {useEffect, useRef} from "preact/compat";
+import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 
 export function App() {
     const {updateTracks, otherUsers} = useAppStore();

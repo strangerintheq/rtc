@@ -1,4 +1,4 @@
-import {UserId} from "../types";
+import {UserId} from "../app/types";
 
 export interface Connection {
     state: ConnectionState;

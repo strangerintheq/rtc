@@ -1,4 +1,4 @@
-import {Connection} from "./connection/types";
+import {Connection} from "../connection/types";
 
 export type ConferenceId = `conferenceId_${string}`;
 export type UserId = `userId_${string}`;

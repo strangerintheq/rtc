@@ -2,14 +2,14 @@ import {create} from "zustand";
 import {ConferenceId, User, UserId} from "./types";
 import {Subscription} from "centrifuge";
 import {log} from "./log";
-import {createConnection} from "./connection/createConnection";
+import {createConnection} from "../connection/createConnection";
 import {joinChannelIfAlreadyNot} from "@chessclub/realtime_infrastructure";
 import {addCentrifugeEventListener} from "@chessclub/realtime_infrastructure/src/public/addCentrifugeEventListener";
 import {emitCentrifugeEvent} from "@chessclub/realtime_infrastructure/src/public/emitCentrifugeEvent";
 import {ChannelEvent} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
-import {Route, RtcChannel} from "./connection/RtcChannel";
-import {determineMaster} from "./connection/determineMaster";
-import {useMediaStreamStore} from "./media-stream/MediaStreamStore";
+import {Route, RtcChannel} from "../connection/RtcChannel";
+import {determineMaster} from "../connection/determineMaster";
+import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 
 export interface AppStore {
     conferenceId?: ConferenceId;

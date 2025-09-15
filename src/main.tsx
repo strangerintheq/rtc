@@ -1,12 +1,12 @@
 import React from "react";
-import {App} from "./App";
-import {getClientToken} from "./getClientToken";
+import {App} from "./app/App";
+import {getClientToken} from "./app/getClientToken";
 import {createRoot} from "preact/compat/client";
 import {connectToCentrifuge} from "@chessclub/realtime_infrastructure";
 import {ContainerNode} from "preact";
-import {ConferenceId, UserId} from "./types";
+import {ConferenceId, UserId} from "./app/types";
 import {centrifugeInstance} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
-import {useAppStore} from "./AppStore";
+import {useAppStore} from "./app/AppStore";
 
 
 const root = document.getElementById('root') as ContainerNode;

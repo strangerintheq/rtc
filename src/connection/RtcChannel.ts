@@ -1,6 +1,6 @@
 import {ChannelEvent} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure"
 import {initChannel} from "@chessclub/realtime_infrastructure/src/public/initChannel"
-import {UserId} from "../types";
+import {UserId} from "../app/types";
 
 export interface Route<T> {
     from: UserId;
