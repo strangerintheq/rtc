@@ -3,7 +3,7 @@ import {createConnection} from "./createConnection";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 import {determineMaster} from "./determineMaster";
 
-export function createConference(log: Logger): Conference {
+export function createConference(log: Logger = (_ => {})): Conference {
 
     const state = {
         currentUserId: null as UserId,
@@ -14,37 +14,28 @@ export function createConference(log: Logger): Conference {
     const rtcMessage = <T>(to: User, payload?: T): RtcMessage<T> => ({
         from: state.currentUserId, to: to.userId, payload});
 
-    const forUser = <P>(callback: (user: User, payload: P) => void): (route: RtcMessage<P>) =>
-        void => (r: RtcMessage<P>) => callback(state.otherUsers.find(u => u.userId === r.from), r.payload);
+    function forUser<P>(callback: (user: User, payload: P) => void): (route: RtcMessage<P>) => void {
+        return (r: RtcMessage<P>) => {
+            const user = state.otherUsers.find(u => u.userId === r.from);
+            user && callback(user, r.payload);
+        };
+    }
 
     async function processNewUserIdList(newUserList: UserId[]) {
-        const newOtherUsers = newUserList
+        const newOtherUsersIds = newUserList
             .filter(id => id !== state.currentUserId);
-        await handleJoined(newOtherUsers);
-        await handleLeft(newOtherUsers);
+        await handleJoined(toJoiningUsers(newOtherUsersIds));
+        await handleLeft(toLeavingUsers(newOtherUsersIds));
     }
 
-    async function handleLeft(newOtherUsers: UserId[]) {
-        const leftUsers = state.otherUsers.filter(u => !newOtherUsers.includes(u.userId));
-        for (const user of leftUsers) {
-            log('user left:', user.userId);
-            await user.connection.disconnect();
-            state.otherUsers.splice(state.otherUsers.indexOf(user), 1);
-        }
+    function toLeavingUsers(newOtherUsersIds: UserId[]) {
+        return state.otherUsers.filter(u => !newOtherUsersIds.includes(u.userId));
     }
 
-    async function handleJoined(newOtherUsers: UserId[]) {
+    function toJoiningUsers(newOtherUsersIds: UserId[]) : User[]{
         const oldOtherUsersIds = state.otherUsers.map(u => u.userId);
-        const joinedUsersIds = newOtherUsers.filter(id => !oldOtherUsersIds.includes(id))
-        for (const userId of joinedUsersIds) {
-            log('user joiner:', userId);
-            const user = {userId, tracks: []};
-            state.otherUsers.push(user)
-            if (determineMaster(state.currentUserId, userId)) {
-                await createConnectionToUser(user, true);
-                await sendOffer(user);
-            }
-        }
+        return newOtherUsersIds.filter(id => !oldOtherUsersIds.includes(id))
+            .map(userId => ({userId, tracks: []}))
     }
 
     async function createConnectionToUser(user: User, master: boolean) {
@@ -96,8 +87,13 @@ export function createConference(log: Logger): Conference {
         await user.connection.iceCandidate(candidate);
     }
 
-    return {
-        async connect(currentUserId: UserId,  signalling: Signalling) {
+    const conference: Conference = {
+
+        onChange: null,
+        onJoin: null,
+        onLeft: null,
+
+        async connect(currentUserId: UserId, signalling: Signalling) {
             log('connect, currentUserId:', currentUserId)
             state.currentUserId = currentUserId;
             state.signalling = signalling;
@@ -109,11 +105,35 @@ export function createConference(log: Logger): Conference {
         },
         async disconnect() {
             await state.signalling.off();
-            await handleLeft(state.otherUsers.map( u=> u.userId));
+            await handleLeft(state.otherUsers);
         },
 
         updateTracks(tracks: MediaStreamTrack[]) {
+            log('updateTracks:', tracks)
             state.otherUsers.forEach(u => u.connection.updateTracks(tracks))
         }
+    };
+
+    async function handleLeft(leftUsers: User[]) {
+        for (const user of leftUsers) {
+            log('user left:', user.userId);
+            await user.connection.disconnect();
+            state.otherUsers.splice(state.otherUsers.indexOf(user), 1);
+        }
+        leftUsers.length && await conference.onLeft(leftUsers)
     }
+
+    async function handleJoined(joinedUsers: User[]) {
+        for (const user of joinedUsers) {
+            log('user joined:', user.userId);
+            state.otherUsers.push(user)
+            if (determineMaster(state.currentUserId, user.userId)) {
+                await createConnectionToUser(user, true);
+                await sendOffer(user);
+            }
+        }
+        joinedUsers.length && await conference.onJoin(joinedUsers)
+    }
+
+    return conference;
 }

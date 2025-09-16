@@ -8,6 +8,9 @@ export type User = {
 }
 
 export interface Conference {
+    onChange: (users: User[]) => Promise<void>;
+    onJoin: (users: User[]) => Promise<void>;
+    onLeft: (users: User[]) => Promise<void>;
     connect(currentUserId: UserId, signalling: Signalling): Promise<void>;
     disconnect(): Promise<void>;
     updateTracks(tracks: MediaStreamTrack[]): void;

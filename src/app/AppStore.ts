@@ -1,7 +1,6 @@
 import {create} from "zustand";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
-import {ConferenceId, User, UserId} from "../conference/types";
-import {logger} from "./logger";
+import {Conference, ConferenceId, User, UserId} from "../conference/types";
 import {createConference} from "../conference/createConference";
 import {createSignalling} from "./signalling";
 
@@ -19,8 +18,17 @@ export const useAppStore = create<AppStore>((
     get
 ) => {
 
-    const log = (...args) => console.log("[Conference]", ...args);
-    const conference = createConference(log);
+    const log = (...args) => console.log("[Conference]", ...args.map(a => [a, "\n"]).flat());
+    const conference : Conference = createConference(log);
+    conference.onChange = async (users: User[]) => {
+        log('users changed', users)
+    };
+    conference.onJoin = async (users: User[]) => {
+        log('users joined', users)
+    };
+    conference.onLeft = async (users: User[]) => {
+        log('users left', users)
+    };
 
     return {
         otherUsers: [],
@@ -28,7 +36,6 @@ export const useAppStore = create<AppStore>((
         async updateTracks() {
             const tracks = useMediaStreamStore.getState().getActualTracks();
             conference.updateTracks(tracks);
-            log('updateTracks:', tracks)
         },
 
         async enter(currentUserId: UserId, conferenceId: ConferenceId) {
