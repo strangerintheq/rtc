@@ -3,6 +3,7 @@ import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 import {Conference, ConferenceId, User, UserId} from "../conference/types";
 import {createConference} from "../conference/createConference";
 import {createSignalling} from "./signalling";
+import {createLogger} from "./logger";
 
 export interface AppStore {
     conferenceId?: ConferenceId;
@@ -18,16 +19,27 @@ export const useAppStore = create<AppStore>((
     get
 ) => {
 
-    const log = (...args) => console.log("[Conference]", ...args.map(a => [a, "\n"]).flat());
+    const log = createLogger({prefix: "[CONFERENCE]"})
     const conference : Conference = createConference(log);
+
     conference.onChange = async (users: User[]) => {
-        log('users changed', users)
+        log('users changed', users);
+        set({otherUsers: [...get().otherUsers]});
     };
+
     conference.onJoin = async (users: User[]) => {
-        log('users joined', users)
+        log('users joined', users);
+        set({otherUsers: [...get().otherUsers, ...users]});
     };
+
     conference.onLeft = async (users: User[]) => {
-        log('users left', users)
+        log('users left', users);
+        const otherUsers = [...get().otherUsers];
+        users.forEach(user => {
+            const targetUser = otherUsers.find(u => u.userId === user.userId)
+            otherUsers.splice(otherUsers.indexOf(targetUser), 1)
+        })
+        set({otherUsers});
     };
 
     return {

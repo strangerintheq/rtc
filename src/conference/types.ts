@@ -43,7 +43,7 @@ export interface Connection {
     receiveAnswer(description: RTCSessionDescriptionInit): Promise<void>;
     disconnect(): Promise<void>;
     iceCandidate(payload: RTCIceCandidate): Promise<void>;
-    updateTracks(tracks: MediaStreamTrack[]): Promise<void>;
+    updateTracks(tracks: MediaStreamTrack[]): void;
 }
 
 export interface ConnectionState {

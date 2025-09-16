@@ -38,30 +38,7 @@ export function createConference(log: Logger = (_ => {})): Conference {
             .map(userId => ({userId, tracks: []}))
     }
 
-    async function createConnectionToUser(user: User, master: boolean) {
-        if (user.connection)
-            return;
-        log('createConnection \nsrc:', state.currentUserId, "\ndst:", user.userId);
-        user.connection = createConnection(state.currentUserId, user.userId);
-        const pc = user.connection.state.peerConnection;
-        pc.onicecandidate = async (e) => {
-            await state.signalling.iceCandidate.emit(rtcMessage(user, e.candidate))
-        };
-        pc.onnegotiationneeded = async (e) => {
-            log("negotiation needed with:", user.userId);
-            await sendOffer(user);
-        }
-        pc.onconnectionstatechange = (e: Event) => {
-            log("connection state with:", user.userId, "\n", pc.connectionState)
-            document.title = pc.connectionState
-        };
-        pc.ontrack = (e: RTCTrackEvent) => {
-            log("tracks changed:", user.userId, e)
-            user.tracks.push(e.track);
-        };
 
-        await user.connection.updateTracks(useMediaStreamStore.getState().getActualTracks())
-    }
 
     async function sendOffer(user: User) {
         const offer = await user.connection.createOffer();
@@ -72,6 +49,7 @@ export function createConference(log: Logger = (_ => {})): Conference {
     async function processOffer(user: User, offer: RTCSessionDescription) {
         log("received OFFER from:", user.userId)
         await createConnectionToUser(user, false);
+
         const answer = await user.connection.receiveOffer(offer);
         log("send ANSWER to:", user.userId)
         await state.signalling.answer.emit(rtcMessage(user, answer))
@@ -133,6 +111,38 @@ export function createConference(log: Logger = (_ => {})): Conference {
             }
         }
         joinedUsers.length && await conference.onJoin(joinedUsers)
+    }
+
+    async function createConnectionToUser(user: User, master: boolean) {
+        if (user.connection)
+            return;
+        log('createConnection \nsrc:', state.currentUserId, "\ndst:", user.userId);
+        user.connection = createConnection(state.currentUserId, user.userId);
+
+        const actualTracks = useMediaStreamStore.getState().getActualTracks();
+        log('setupTracks', actualTracks);
+        user.connection.updateTracks(actualTracks);
+
+        const pc = user.connection.state.peerConnection;
+        pc.onicecandidate = async (e) => {
+            await state.signalling.iceCandidate.emit(rtcMessage(user, e.candidate))
+        };
+
+        pc.onconnectionstatechange = (e: Event) => {
+            log("connection state with:", user.userId, "\n", pc.connectionState)
+            document.title = pc.connectionState
+            if (pc.connectionState === "connected" && !pc.onnegotiationneeded) {
+                pc.onnegotiationneeded = async (e) => {
+                    log("negotiation needed with:", user.userId);
+                    await sendOffer(user);
+                }
+            }
+        };
+        pc.ontrack = (e: RTCTrackEvent) => {
+            log("tracks changed:", user.userId, e)
+            user.tracks.push(e.track);
+            conference.onChange([user])
+        };
     }
 
     return conference;

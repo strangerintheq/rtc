@@ -43,8 +43,8 @@ export function createConnection(localUserId: UserId, remoteUserId: UserId): Con
         async iceCandidate(payload: RTCIceCandidate) {
             await peerConnection.addIceCandidate(payload)
         },
-        async updateTracks(tracks: MediaStreamTrack[]) {
-            peerConnection.getSenders().forEach(t => peerConnection.removeTrack(t))
+        updateTracks(tracks: MediaStreamTrack[]) {
+           // peerConnection.getSenders().forEach(t => peerConnection.removeTrack(t))
             tracks.forEach(item => peerConnection.addTrack(item));
         },
     }

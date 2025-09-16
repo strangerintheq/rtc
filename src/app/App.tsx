@@ -27,7 +27,7 @@ export function App() {
         <button onClick={toggleShareScreen}>{mss.desktopStreamTrack? "share screen" : "share screen"}</button>
         <div>
             <User tracks={mss.getActualTracks(true)} />
-            {otherUsers.map(user => <User tracks={user.tracks} key={user.userId}/>)}
+            {otherUsers.map(user => <User tracks={user.tracks} />)}
         </div>
     </div>
 }

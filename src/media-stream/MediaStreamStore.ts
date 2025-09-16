@@ -23,7 +23,7 @@ export const useMediaStreamStore = create<MediaStreamStoreApi>((
                 return;
             track.stop();
             state[trackType] = null;
-            localStorage.removeItem(trackType);
+            persistentState.setEnabled(trackType, false)
         })
         set(state)
     }
@@ -46,10 +46,14 @@ export const useMediaStreamStore = create<MediaStreamStoreApi>((
         },
 
         async startCameraStream() {
-            const cameraStream = await navigator.mediaDevices.getUserMedia({
-                audio: false, video: CameraConstraintsFactory(get().quality)
-            });
-            update(cameraStream.getTracks()[0], TrackType.cameraStreamTrack);
+            try {
+                const cameraStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false, video: CameraConstraintsFactory(get().quality)
+                });
+                update(cameraStream.getTracks()[0], TrackType.cameraStreamTrack);
+            } catch (e) {
+                persistentState.setEnabled(TrackType.cameraStreamTrack, false)
+            }
         },
 
         async stopCameraStream() {
@@ -57,10 +61,14 @@ export const useMediaStreamStore = create<MediaStreamStoreApi>((
         },
 
         async startDesktopStream() {
-            const desktopStream = await navigator.mediaDevices.getDisplayMedia({
-                audio: false, video: DesktopConstraintsFactory(get().quality)
-            });
-            update(desktopStream.getTracks()[0], TrackType.desktopStreamTrack);
+            try {
+                const desktopStream = await navigator.mediaDevices.getDisplayMedia({
+                    audio: false, video: DesktopConstraintsFactory(get().quality)
+                });
+                update(desktopStream.getTracks()[0], TrackType.desktopStreamTrack);
+            } catch (e) {
+                persistentState.setEnabled(TrackType.desktopStreamTrack, false)
+            }
         },
 
         async stopDesktopStream() {
@@ -68,10 +76,14 @@ export const useMediaStreamStore = create<MediaStreamStoreApi>((
         },
 
         async startMicrophoneStream() {
-            const microphoneStream = await navigator.mediaDevices.getUserMedia({
-                video: false, audio: MicrophoneConstraintsFactory(get().quality)
-            });
-            update(microphoneStream.getTracks()[0], TrackType.microphoneStreamTrack);
+            try {
+                const microphoneStream = await navigator.mediaDevices.getUserMedia({
+                    video: false, audio: MicrophoneConstraintsFactory(get().quality)
+                });
+                update(microphoneStream.getTracks()[0], TrackType.microphoneStreamTrack);
+            } catch (e) {
+                persistentState.setEnabled(TrackType.microphoneStreamTrack, false)
+            }
         },
 
         async stopMicrophoneStream() {
