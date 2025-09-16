@@ -1,5 +1,4 @@
-import {Conference, ConferenceId, Logger, RtcMessage, Signalling, User, UserId} from "./types";
-
+import {Conference, Logger, RtcMessage, Signalling, User, UserId} from "./types";
 import {createConnection} from "./createConnection";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 import {determineMaster} from "./determineMaster";
@@ -12,24 +11,39 @@ export function createConference(log: Logger): Conference {
         otherUsers: [] as User[]
     };
 
-    const getUserById = (userId: UserId) => state.otherUsers.find(u => u.userId === userId)
+    const rtcMessage = <T>(to: User, payload?: T): RtcMessage<T> => ({
+        from: state.currentUserId, to: to.userId, payload});
 
-    async function join(userId: UserId) {
-        if (getUserById(userId))
-            return;
-        const user: User = {userId, tracks: []};
-        state.otherUsers.push(user);
-        if (determineMaster(state.currentUserId, userId)) {
-            await createConnectionToUser(user, true);
-            await sendOffer(user);
+    const forUser = <P>(callback: (user: User, payload: P) => void): (route: RtcMessage<P>) =>
+        void => (r: RtcMessage<P>) => callback(state.otherUsers.find(u => u.userId === r.from), r.payload);
+
+    async function processNewUserIdList(newUserList: UserId[]) {
+        const newOtherUsers = newUserList
+            .filter(id => id !== state.currentUserId);
+        await handleJoined(newOtherUsers);
+        await handleLeft(newOtherUsers);
+    }
+
+    async function handleLeft(newOtherUsers: UserId[]) {
+        const leftUsers = state.otherUsers.filter(u => !newOtherUsers.includes(u.userId));
+        for (const user of leftUsers) {
+            log('user left:', user.userId);
+            await user.connection.disconnect();
+            state.otherUsers.splice(state.otherUsers.indexOf(user), 1);
         }
     }
 
-    async function leave(userId: UserId) {
-        const user = getUserById(userId);
-        if (user) {
-            await user.connection.disconnect();
-            state.otherUsers.splice(state.otherUsers.indexOf(user), 1);
+    async function handleJoined(newOtherUsers: UserId[]) {
+        const oldOtherUsersIds = state.otherUsers.map(u => u.userId);
+        const joinedUsersIds = newOtherUsers.filter(id => !oldOtherUsersIds.includes(id))
+        for (const userId of joinedUsersIds) {
+            log('user joiner:', userId);
+            const user = {userId, tracks: []};
+            state.otherUsers.push(user)
+            if (determineMaster(state.currentUserId, userId)) {
+                await createConnectionToUser(user, true);
+                await sendOffer(user);
+            }
         }
     }
 
@@ -82,27 +96,20 @@ export function createConference(log: Logger): Conference {
         await user.connection.iceCandidate(candidate);
     }
 
-    function forUser<P>(callback: (user: User, payload: P) => void): (route: RtcMessage<P>) => void {
-        return (r: RtcMessage<P>) => callback(state.otherUsers.find(u => u.userId === r.from), r.payload)
-    }
-
-    function rtcMessage<T>(to: User, payload?: T): RtcMessage<T> {
-        return {from: state.currentUserId, to: to.userId, payload}
-    }
-
     return {
         async connect(currentUserId: UserId,  signalling: Signalling) {
+            log('connect, currentUserId:', currentUserId)
             state.currentUserId = currentUserId;
             state.signalling = signalling;
-            signalling.onJoin = join;
-            signalling.onLeave = leave;
+            signalling.setUserIdList = processNewUserIdList;
             signalling.offer.on(forUser(processOffer));
             signalling.answer.on(forUser(processAnswer));
             signalling.iceCandidate.on(forUser(processCandidate));
             await signalling.connect();
         },
         async disconnect() {
-
+            await state.signalling.off();
+            await handleLeft(state.otherUsers.map( u=> u.userId));
         },
 
         updateTracks(tracks: MediaStreamTrack[]) {

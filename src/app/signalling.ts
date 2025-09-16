@@ -1,6 +1,6 @@
 import {connectToCentrifuge, joinChannelIfAlreadyNot} from "@chessclub/realtime_infrastructure";
 import {centrifugeInstance, ChannelEvent} from "@chessclub/realtime_infrastructure/src/RealtimeInfrastructure";
-import {ConferenceId, RtcMessage, Signalling, SignallingChannel, UserId} from "../conference/types";
+import {ConferenceId, RtcMessage, Signalling, SignallingTopic, User, UserId} from "../conference/types";
 import {addCentrifugeEventListener} from "@chessclub/realtime_infrastructure/src/public/addCentrifugeEventListener";
 import {emitCentrifugeEvent} from "@chessclub/realtime_infrastructure/src/public/emitCentrifugeEvent";
 import {initChannel} from "@chessclub/realtime_infrastructure/src/public/initChannel";
@@ -20,30 +20,31 @@ export function createSignalling(currentUserId: UserId, conferenceId: Conference
 
     return {
         off: () => offListeners.forEach(off => off()),
-        offer: createSignallingChannel(key, RtcChannel.OFFER, offListeners),
-        answer: createSignallingChannel(key, RtcChannel.ANSWER, offListeners),
-        iceCandidate: createSignallingChannel(key, RtcChannel.ICE_CANDIDATE, offListeners),
-        onJoin: null,
-        onLeave: null,
+        offer: createSignallingTopic(key, RtcChannel.OFFER, offListeners),
+        answer: createSignallingTopic(key, RtcChannel.ANSWER, offListeners),
+        iceCandidate: createSignallingTopic(key, RtcChannel.ICE_CANDIDATE, offListeners),
+        setUserIdList: null,
         async connect() {
+            const handlePresence = async () =>
+                await this.setUserIdList(Object.keys((await subscription.presence()).clients));
             const {subscription} = await joinChannelIfAlreadyNot(key);
-            subscription.on('join', e => this.onJoin(e.info.client as UserId));
-            subscription.on('leave', e => this.onLeave(e.info.client as UserId));
-            const presence = await subscription.presence();
-            Object.values(presence.clients)
-                .map(c => c.client as UserId)
-                .filter(id => id !== currentUserId)
-                .forEach(this.onJoin);
+            subscription.on('join', async () => await handlePresence());
+            subscription.on('leave', async ()  => await handlePresence());
+            await handlePresence();
         }
     }
 }
 
-function createSignallingChannel<T>(key, evt: ChannelEvent<T>, offListeners: (() => void)[]): SignallingChannel<any> {
+function createSignallingTopic<T>(
+    key,
+    evt: ChannelEvent<RtcMessage<T>>,
+    offListeners: (() => void)[]
+): SignallingTopic<T> {
     return {
-        async emit(payload: T) {
+        async emit(payload: RtcMessage<T>) {
             await emitCentrifugeEvent(key, evt, payload);
         },
-        on(callback: (payload: T) => void) {
+        on(callback: (payload: RtcMessage<T>) => void) {
             offListeners.push(addCentrifugeEventListener(key, evt, callback))
         }
     }

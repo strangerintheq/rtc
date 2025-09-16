@@ -22,39 +22,6 @@ export const useAppStore = create<AppStore>((
     const log = (...args) => console.log("[Conference]", ...args);
     const conference = createConference(log);
 
-    async function handleLeft(newOtherUsers: UserId[]) {
-        const leftUsers = get().otherUsers.filter(u => !newOtherUsers.includes(u.userId));
-        if (!leftUsers.length)
-            return;
-        logger('[AppStore] handleLeft, leftUsers:', leftUsers);
-        leftUsers.forEach(u => u.connection.disconnect())
-        set({otherUsers: get().otherUsers.filter(u => !leftUsers.includes(u))})
-    }
-
-    async function handleJoined(newOtherUsers: UserId[]) {
-        // log('[AppStore] handleJoined:', newOtherUsers);
-        const {otherUsers, currentUserId} = get();
-        const oldOtherUsersIds = otherUsers.map(u => u.userId);
-        const joinedUsersIds = newOtherUsers.filter(id => !oldOtherUsersIds.includes(id))
-        if (!joinedUsersIds.length)
-            return;
-        logger('[AppStore] handleJoined, joinedUsers:', joinedUsersIds);
-
-        const joinedUsers = joinedUsersIds.map(id => ({
-            userId: id, tracks: []
-        } as User));
-
-        set({otherUsers: [...otherUsers, ...joinedUsers]})
-        // joinedUsers.map(async user => {
-        //     if (determineMaster(get().currentUserId, user.userId)) {
-        //         await createConnectionToUser(user, true);
-        //         await sendOffer(user);
-        //     }
-        // });
-    }
-
-
-
     return {
         otherUsers: [],
 

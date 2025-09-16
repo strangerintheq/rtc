@@ -20,16 +20,15 @@ export interface RtcMessage<T> {
 }
 
 export interface Signalling {
-    onLeave: (userId: UserId) => Promise<void>;
-    onJoin: (userId: UserId) => Promise<void>;
+    setUserIdList: (userIdList: UserId[]) => Promise<void>;
     connect(): Promise<void>;
-    offer: SignallingChannel<RTCSessionDescription>;
-    answer: SignallingChannel<RTCSessionDescription>;
-    iceCandidate: SignallingChannel<RTCIceCandidate>;
+    offer: SignallingTopic<RTCSessionDescription>;
+    answer: SignallingTopic<RTCSessionDescription>;
+    iceCandidate: SignallingTopic<RTCIceCandidate>;
     off();
 }
 
-export interface SignallingChannel<T> {
+export interface SignallingTopic<T> {
     emit(payload: RtcMessage<T>): Promise<void>;
     on(callback: (payload: RtcMessage<T>) => void):void
 }
