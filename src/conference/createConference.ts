@@ -49,9 +49,11 @@ export function createConference(): Conference {
     }
 
     async function sendOffer(user: User) {
+        await new Promise(r => setTimeout(r, 300))
         const offer = await user.connection.createOffer();
         log("send offer to:", user.userId);
         await state.signalling.offer.emit(rtcMessage(user, offer));
+
     }
 
     async function processOffer(user: User, offer: RTCSessionDescription) {
@@ -114,7 +116,6 @@ export function createConference(): Conference {
             if (determineMaster(state.currentUserId, user.userId)) {
                 await createConnectionToUser(user, true);
                 await sendOffer(user);
-
             }
         }
         joinedUsers.length && await conference.onJoin(joinedUsers)
@@ -123,7 +124,7 @@ export function createConference(): Conference {
     async function createConnectionToUser(user: User, master: boolean) {
         if (user.connection)
             return;
-        log('createConnection \nsrc:', state.currentUserId, "\ndst:", user.userId);
+        log('createConnection:', state.currentUserId, "->", user.userId);
         user.connection = createConnection(state.currentUserId, user.userId);
 
         const actualTracks = useMediaStreamStore.getState().getActualTracks();
@@ -136,9 +137,13 @@ export function createConference(): Conference {
             await state.signalling.iceCandidate.emit(rtcMessage(user, e.candidate))
         };
         pc.onconnectionstatechange = (e: Event) => {
-            log("connection state with:", user.userId, "\n", pc.connectionState)
-            user.status = pc.connectionState;
-            if (pc.connectionState === "connected" && !pc.onnegotiationneeded) {
+            let s = pc.connectionState;
+            log("connection state with:", user.userId, s)
+            user.status = s;
+            if (s === "failed") {
+
+            }
+            if (s === "connected" && !pc.onnegotiationneeded) {
                 pc.onnegotiationneeded = async (e) => {
                     log("negotiation needed with:", user.userId);
                     await sendOffer(user);

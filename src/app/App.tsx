@@ -1,4 +1,4 @@
-import React, {memo, useMemo} from "react";
+import React, {memo, useEffect, useMemo, useRef} from "react";
 import {useAppStore} from "./AppStore";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 
@@ -46,8 +46,21 @@ const Track = memo(({track}: HasTrack) => {
 })
 
 const AudioTrack = memo(({track}: HasTrack) => {
+    const ref = useRef<HTMLAudioElement>(null)
+    useEffect(() => {
+        (async function() {
+            try {
+                await ref.current.play();
+            } catch (e) {
+            }
+            try {
+                await ref.current.play();
+            } catch (e) {
+            }
+        })();
+    }, [track])
     // @ts-ignore
-    return <audio autoplay={true} playsInline srcObject={new MediaStream([track])}/>;
+    return <audio ref={ref} autoplay={true} playsInline srcObject={new MediaStream([track])}/>;
 })
 
 const VideoTrack = memo(({track}: HasTrack) => {

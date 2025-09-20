@@ -1,7 +1,7 @@
 import {User} from "./types";
 import {createLogger} from "../app/logger";
 
-const log = createLogger({prefix: "[processIceCandidate]", color: "#edd"})
+const log = createLogger({ prefix: "[processIceCandidate]", color: "#edd"})
 
 export async function processIceCandidate(user: User, candidate: RTCIceCandidate) {
     log("received ice candidate")

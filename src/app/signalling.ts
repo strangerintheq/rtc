@@ -56,6 +56,7 @@ export async function initSignalling(): Promise<UserId> {
     const centrifugeUrl = 'wss://chessclub.spb.ru/centrifugo/connection/websocket';
     return new Promise<UserId>((resolve) => {
         connectToCentrifuge(centrifugeUrl, session);
+        centrifugeInstance.log = true
         centrifugeInstance.socket.on('connected', () => {
             resolve(centrifugeInstance.socketId as UserId);
         });
