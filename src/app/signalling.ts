@@ -7,8 +7,8 @@ import {initChannel} from "@chessclub/realtime_infrastructure/src/public/initCha
 
 export let RtcChannel = {
     ICE_CANDIDATE: new ChannelEvent<RtcMessage<RTCIceCandidate>>(),
-    OFFER: new ChannelEvent<RtcMessage<RTCSessionDescriptionInit>>(),
-    ANSWER: new ChannelEvent<RtcMessage<RTCSessionDescriptionInit>>(),
+    OFFER: new ChannelEvent<RtcMessage<RTCSessionDescription>>(),
+    ANSWER: new ChannelEvent<RtcMessage<RTCSessionDescription>>(),
 }
 
 initChannel(RtcChannel);

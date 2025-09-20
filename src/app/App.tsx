@@ -32,14 +32,14 @@ export function App() {
     </div>
 }
 
-type HasTrack = { track: MediaStreamTrack };
-
-const User = memo(({tracks, connection}: HasTrack & { connection: string }) => {
+const User = memo(({tracks, connection}: { tracks: MediaStreamTrack[], connection: string }) => {
     return <div style={{border: "1px solid black", width: 300, minHeight: 200}}>
         <div>tracks: {tracks.length} connection: {connection}</div>
         {tracks.map(track => <Track track={track} key={track.id}/>)}
     </div>;
 });
+
+type HasTrack = { track: MediaStreamTrack };
 
 const Track = memo(({track}: HasTrack) => {
     return track.kind === "audio" ? <AudioTrack track={track}/> : <VideoTrack track={track}/>;
