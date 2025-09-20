@@ -14,7 +14,7 @@ export interface AppStore {
     enter(currentUser: UserId, conferenceId: string);
 }
 
-const log = createLogger({prefix: "[AppStore]"})
+const log = createLogger({prefix: "[AppStore]", color: "#ddd"})
 
 export const useAppStore = create<AppStore>((
     set,

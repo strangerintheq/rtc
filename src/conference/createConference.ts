@@ -6,7 +6,7 @@ import {createUser} from "./createUser";
 import {processIceCandidate, processIceCandidatesQueue} from "./processIceCandidate";
 import {createLogger} from "../app/logger";
 
-const log = createLogger({prefix: "[createConference]"})
+const log = createLogger({prefix: "[createConference]", color: "#dde"})
 
 export function createConference(): Conference {
 

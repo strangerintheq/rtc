@@ -7,7 +7,7 @@ declare global {
     }
 }
 
-const log = createLogger({prefix: "[createConnection]"})
+const log = createLogger({prefix: "[createConnection]", color: "#ded"})
 
 export function createConnection(localUserId: UserId, remoteUserId: UserId): Connection {
     const offerOptions: RTCOfferOptions = {
