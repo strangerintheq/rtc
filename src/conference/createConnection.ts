@@ -1,10 +1,13 @@
-import {Connection, ConnectionState, UserId} from "./types";
+import {Connection, ConnectionInnerState, UserId} from "./types";
+import {createLogger} from "../app/logger";
 
 declare global {
     interface Window {
         cfg: RTCConfiguration;
     }
 }
+
+const log = createLogger({prefix: "[createConnection]"})
 
 export function createConnection(localUserId: UserId, remoteUserId: UserId): Connection {
     const offerOptions: RTCOfferOptions = {
@@ -15,14 +18,20 @@ export function createConnection(localUserId: UserId, remoteUserId: UserId): Con
 
     const peerConnection = new RTCPeerConnection(window.cfg);
 
-    const state: ConnectionState = {
+    peerConnection.oniceconnectionstatechange = () => {
+        if (peerConnection.iceConnectionState === "failed") {
+            peerConnection.restartIce();
+        }
+    };
+
+    const state: ConnectionInnerState = {
         peerConnection,
         localUserId,
         remoteUserId
     }
 
     return {
-        state,
+        innerState: state,
         async createOffer(): Promise<RTCSessionDescription> {
             const offer = await peerConnection.createOffer(offerOptions)
             await peerConnection.setLocalDescription(new RTCSessionDescription(offer));
@@ -41,10 +50,10 @@ export function createConnection(localUserId: UserId, remoteUserId: UserId): Con
             await peerConnection.close()
         },
         async iceCandidate(payload: RTCIceCandidate) {
+            log("processing ice candidate")
             await peerConnection.addIceCandidate(payload)
         },
         updateTracks(tracks: MediaStreamTrack[]) {
-           // peerConnection.getSenders().forEach(t => peerConnection.removeTrack(t))
             tracks.forEach(item => peerConnection.addTrack(item));
         },
     }

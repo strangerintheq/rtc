@@ -26,15 +26,15 @@ export function App() {
         <button onClick={toggleMic}>{mss.microphoneStreamTrack? "disable mic" : "enable mic"}</button>
         <button onClick={toggleShareScreen}>{mss.desktopStreamTrack? "share screen" : "share screen"}</button>
         <div>
-            <User tracks={mss.getActualTracks(true)} />
-            {otherUsers.map(user => <User tracks={user.tracks} />)}
+            <User tracks={mss.getActualTracks(true)} connection={"self"}/>
+            {otherUsers.map(user => <User tracks={user.tracks} connection={user.status}/>)}
         </div>
     </div>
 }
 
-function User({tracks}: { tracks: MediaStreamTrack[] }) {
+function User({tracks, connection}: { tracks: MediaStreamTrack[], connection: string }) {
     return <div style={{border: "1px solid black", width:300, minHeight: 200}}>
-        <div>tracks: {tracks.length}</div>
+        <div>tracks: {tracks.length} connection: {connection}</div>
         {tracks.map(track => <Track track={track} key={track.id}/>)}
     </div>;
 }

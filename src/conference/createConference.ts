@@ -2,6 +2,8 @@ import {Conference, Logger, RtcMessage, Signalling, User, UserId} from "./types"
 import {createConnection} from "./createConnection";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 import {determineMaster} from "./determineMaster";
+import {createUser} from "./createUser";
+import {processIceCandidate, processIceCandidatesQueue} from "./processIceCandidate";
 
 export function createConference(log: Logger = (_ => {})): Conference {
 
@@ -11,8 +13,13 @@ export function createConference(log: Logger = (_ => {})): Conference {
         otherUsers: [] as User[]
     };
 
-    const rtcMessage = <T>(to: User, payload?: T): RtcMessage<T> => ({
-        from: state.currentUserId, to: to.userId, payload});
+    function rtcMessage<T>(to: User, payload?: T): RtcMessage<T> {
+        return {
+            from: state.currentUserId,
+            to: to.userId,
+            payload
+        };
+    }
 
     function forUser<P>(callback: (user: User, payload: P) => void): (route: RtcMessage<P>) => void {
         return (r: RtcMessage<P>) => {
@@ -24,21 +31,19 @@ export function createConference(log: Logger = (_ => {})): Conference {
     async function processNewUserIdList(newUserList: UserId[]) {
         const newOtherUsersIds = newUserList
             .filter(id => id !== state.currentUserId);
-        await handleJoined(toJoiningUsers(newOtherUsersIds));
-        await handleLeft(toLeavingUsers(newOtherUsersIds));
+        await handleJoined(asJoiningUsers(newOtherUsersIds));
+        await handleLeft(asLeavingUsers(newOtherUsersIds));
     }
 
-    function toLeavingUsers(newOtherUsersIds: UserId[]) {
+    function asLeavingUsers(newOtherUsersIds: UserId[]) {
         return state.otherUsers.filter(u => !newOtherUsersIds.includes(u.userId));
     }
 
-    function toJoiningUsers(newOtherUsersIds: UserId[]) : User[]{
+    function asJoiningUsers(newOtherUsersIds: UserId[]) : User[]{
         const oldOtherUsersIds = state.otherUsers.map(u => u.userId);
         return newOtherUsersIds.filter(id => !oldOtherUsersIds.includes(id))
-            .map(userId => ({userId, tracks: []}))
+            .map(createUser)
     }
-
-
 
     async function sendOffer(user: User) {
         const offer = await user.connection.createOffer();
@@ -53,16 +58,14 @@ export function createConference(log: Logger = (_ => {})): Conference {
         const answer = await user.connection.receiveOffer(offer);
         log("send ANSWER to:", user.userId)
         await state.signalling.answer.emit(rtcMessage(user, answer))
+        processIceCandidatesQueue(user)
+
     }
 
     async function processAnswer(user: User, answer: RTCSessionDescription) {
         log("received ANSWER from:", user.userId)
         await user.connection.receiveAnswer(answer);
-    }
-
-    async function processCandidate(user: User, candidate: RTCIceCandidate) {
-        log("received ICE_CANDIDATE from:", user.userId)
-        await user.connection.iceCandidate(candidate);
+        processIceCandidatesQueue(user)
     }
 
     const conference: Conference = {
@@ -78,7 +81,7 @@ export function createConference(log: Logger = (_ => {})): Conference {
             signalling.setUserIdList = processNewUserIdList;
             signalling.offer.on(forUser(processOffer));
             signalling.answer.on(forUser(processAnswer));
-            signalling.iceCandidate.on(forUser(processCandidate));
+            signalling.iceCandidate.on(forUser(processIceCandidate));
             await signalling.connect();
         },
         async disconnect() {
@@ -108,6 +111,7 @@ export function createConference(log: Logger = (_ => {})): Conference {
             if (determineMaster(state.currentUserId, user.userId)) {
                 await createConnectionToUser(user, true);
                 await sendOffer(user);
+
             }
         }
         joinedUsers.length && await conference.onJoin(joinedUsers)
@@ -123,26 +127,29 @@ export function createConference(log: Logger = (_ => {})): Conference {
         log('setupTracks', actualTracks);
         user.connection.updateTracks(actualTracks);
 
-        const pc = user.connection.state.peerConnection;
+        const pc = user.connection.innerState.peerConnection;
         pc.onicecandidate = async (e) => {
+            log('sending ice candidate')
             await state.signalling.iceCandidate.emit(rtcMessage(user, e.candidate))
         };
-
         pc.onconnectionstatechange = (e: Event) => {
             log("connection state with:", user.userId, "\n", pc.connectionState)
-            document.title = pc.connectionState
+            user.status = pc.connectionState
             if (pc.connectionState === "connected" && !pc.onnegotiationneeded) {
                 pc.onnegotiationneeded = async (e) => {
                     log("negotiation needed with:", user.userId);
                     await sendOffer(user);
                 }
             }
+            conference.onChange([user])
         };
         pc.ontrack = (e: RTCTrackEvent) => {
             log("tracks changed:", user.userId, e)
             user.tracks.push(e.track);
             conference.onChange([user])
         };
+
+
     }
 
     return conference;
