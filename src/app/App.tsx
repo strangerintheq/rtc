@@ -1,4 +1,4 @@
-import React from "react";
+import React, {memo, useMemo} from "react";
 import {useAppStore} from "./AppStore";
 import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 
@@ -22,35 +22,39 @@ export function App() {
     }
 
     return <div>
-        <button onClick={toggleCam}>{mss.cameraStreamTrack? "disable cam" : "enable cam"}</button>
-        <button onClick={toggleMic}>{mss.microphoneStreamTrack? "disable mic" : "enable mic"}</button>
-        <button onClick={toggleShareScreen}>{mss.desktopStreamTrack? "share screen" : "share screen"}</button>
+        <button onClick={toggleCam}>{mss.cameraStreamTrack ? "disable cam" : "enable cam"}</button>
+        <button onClick={toggleMic}>{mss.microphoneStreamTrack ? "disable mic" : "enable mic"}</button>
+        <button onClick={toggleShareScreen}>{mss.desktopStreamTrack ? "share screen" : "share screen"}</button>
         <div>
             <User tracks={mss.getActualTracks(true)} connection={"self"}/>
-            {otherUsers.map(user => <User tracks={user.tracks} connection={user.status}/>)}
+            {otherUsers.map(user => <User key={user.userId} tracks={user.tracks} connection={user.status}/>)}
         </div>
     </div>
 }
 
-function User({tracks, connection}: { tracks: MediaStreamTrack[], connection: string }) {
-    return <div style={{border: "1px solid black", width:300, minHeight: 200}}>
+type HasTrack = { track: MediaStreamTrack };
+
+const User = memo(({tracks, connection}: HasTrack & { connection: string }) => {
+    return <div style={{border: "1px solid black", width: 300, minHeight: 200}}>
         <div>tracks: {tracks.length} connection: {connection}</div>
         {tracks.map(track => <Track track={track} key={track.id}/>)}
     </div>;
-}
+});
 
-function Track({track}: { track: MediaStreamTrack }) {
+const Track = memo(({track}: HasTrack) => {
     return track.kind === "audio" ? <AudioTrack track={track}/> : <VideoTrack track={track}/>;
-}
+})
 
-function AudioTrack({track}: { track: MediaStreamTrack }) {
+const AudioTrack = memo(({track}: HasTrack) => {
     // @ts-ignore
     return <audio autoplay={true} playsInline srcObject={new MediaStream([track])}/>;
-}
+})
 
-function VideoTrack({track}: { track: MediaStreamTrack }) {
+const VideoTrack = memo(({track}: HasTrack) => {
     // @ts-ignore
     return <video width={300} muted autoPlay playsinline={true} playsInline
                   srcObject={new MediaStream([track])}/>;
-}
+})
+
+
 

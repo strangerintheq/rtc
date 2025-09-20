@@ -7,7 +7,7 @@ export type User = {
     tracks: MediaStreamTrack[];
     iceCandidates: RTCIceCandidate[];
     progress: number;
-    status: ConnectionStatus;
+    status: RTCPeerConnectionState | "";
 }
 
 export interface Conference {

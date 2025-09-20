@@ -14,13 +14,14 @@ export interface AppStore {
     enter(currentUser: UserId, conferenceId: string);
 }
 
+const log = createLogger({prefix: "[AppStore]"})
+
 export const useAppStore = create<AppStore>((
     set,
     get
 ) => {
 
-    const log = createLogger({prefix: "[CONFERENCE]"})
-    const conference : Conference = createConference(log);
+    const conference : Conference = createConference();
 
     conference.onChange = async (users: User[]) => {
         log('users changed', users);

@@ -6,6 +6,6 @@ export function createUser(userId: UserId): User {
         tracks: [],
         progress: 0,
         iceCandidates: [],
-        status: ConnectionStatus.CREATED
+        status: ""
     }
 }

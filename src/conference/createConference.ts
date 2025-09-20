@@ -4,8 +4,11 @@ import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
 import {determineMaster} from "./determineMaster";
 import {createUser} from "./createUser";
 import {processIceCandidate, processIceCandidatesQueue} from "./processIceCandidate";
+import {createLogger} from "../app/logger";
 
-export function createConference(log: Logger = (_ => {})): Conference {
+const log = createLogger({prefix: "[createConference]"})
+
+export function createConference(): Conference {
 
     const state = {
         currentUserId: null as UserId,
@@ -134,7 +137,7 @@ export function createConference(log: Logger = (_ => {})): Conference {
         };
         pc.onconnectionstatechange = (e: Event) => {
             log("connection state with:", user.userId, "\n", pc.connectionState)
-            user.status = pc.connectionState
+            user.status = pc.connectionState;
             if (pc.connectionState === "connected" && !pc.onnegotiationneeded) {
                 pc.onnegotiationneeded = async (e) => {
                     log("negotiation needed with:", user.userId);
