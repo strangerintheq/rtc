@@ -1,6 +1,6 @@
 import React from "react";
 import {useAppStore} from "../AppStore";
-import {useMediaStreamStore} from "../../media-stream/MediaStreamStore";
+import {useMediaStreamStore} from "../../media/MediaStreamStore";
 
 export function ButtonsPanel() {
     const {updateTracks} = useAppStore();

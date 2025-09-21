@@ -1,6 +1,6 @@
 import {Conference, Logger, RtcMessage, Signalling, User, UserId} from "./types";
 import {createConnection} from "./createConnection";
-import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
+import {useMediaStreamStore} from "../media/MediaStreamStore";
 import {determineMaster} from "./determineMaster";
 import {createUser} from "./createUser";
 import {processIceCandidate, processIceCandidatesQueue} from "./processIceCandidate";

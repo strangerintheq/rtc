@@ -1,5 +1,5 @@
 import {create} from "zustand";
-import {useMediaStreamStore} from "../media-stream/MediaStreamStore";
+import {useMediaStreamStore} from "../media/MediaStreamStore";
 import {Conference, ConferenceId, User, UserId} from "../conference/types";
 import {createConference} from "../conference/createConference";
 import {createSignalling} from "./signalling";
