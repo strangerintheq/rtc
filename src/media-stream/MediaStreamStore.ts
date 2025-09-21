@@ -63,7 +63,7 @@ export const useMediaStreamStore = create<MediaStreamStoreApi>((
         async startDesktopStream() {
             try {
                 const desktopStream = await navigator.mediaDevices.getDisplayMedia({
-                    audio: false, video: DesktopConstraintsFactory(get().quality)
+                    audio: false, video: DesktopConstraintsFactory(get().quality),
                 });
                 update(desktopStream.getTracks()[0], TrackType.desktopStreamTrack);
             } catch (e) {
