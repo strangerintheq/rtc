@@ -25,7 +25,9 @@ export const AudioTrack = memo(({track}: HasTrack) => {
 
     }, [track]);
 
-    const ms = useMemo(() => new MediaStream([track]), [track])
+    useEffect(() => {
+        ref.current.srcObject = new MediaStream([track]);
+    }, [track]);
 
-    return <audio ref={ref} srcObject={ms}/>;
+    return <audio ref={ref}/>;
 })

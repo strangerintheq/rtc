@@ -18,8 +18,10 @@ export const VideoTrack = memo(({track}: HasTrack) => {
         videoTag.setAttribute('autoPlay', 'true')
     }, []);
 
-    const ms = useMemo(() => new MediaStream([track]), [track])
+   useEffect(() => {
+       ref.current.srcObject = new MediaStream([track]);
+   }, [track]);
 
-    return <video ref={ref} srcObject={ms}/>;
+    return <video ref={ref}/>;
 })
 
