@@ -58,7 +58,3 @@ export const useAppStore = create<AppStore>((
 
     }
 });
-
-function makeChannelKey(conferenceId: ConferenceId) {
-    return {key: "conf_" + conferenceId};
-}

@@ -1,4 +1,4 @@
-import {User, ConnectionStatus, UserId} from "./types";
+import {User, UserId} from "./types";
 
 export function createUser(userId: UserId): User {
     return {

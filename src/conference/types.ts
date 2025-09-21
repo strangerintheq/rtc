@@ -5,6 +5,8 @@ export type User = {
     userId: UserId;
     connection?: Connection;
     tracks: MediaStreamTrack[];
+    remoteAudio?;
+    remoteVideo?;
     iceCandidates: RTCIceCandidate[];
     progress: number;
     status: RTCPeerConnectionState | "";
@@ -27,10 +29,10 @@ export interface RtcMessage<T> {
 
 export interface Signalling {
     setUserIdList: (userIdList: UserId[]) => Promise<void>;
-    connect(): Promise<void>;
     offer: SignallingTopic<RTCSessionDescription>;
     answer: SignallingTopic<RTCSessionDescription>;
     iceCandidate: SignallingTopic<RTCIceCandidate>;
+    connect(): Promise<void>;
     off();
 }
 
@@ -40,6 +42,7 @@ export interface SignallingTopic<T> {
 }
 
 export interface Connection {
+    mediaStateChanged?: (state: {audio: boolean, video: boolean}) => void;
     innerState: ConnectionInnerState;
     createOffer(): Promise<RTCSessionDescription>;
     receiveOffer(description: RTCSessionDescriptionInit): Promise<RTCSessionDescription>;
@@ -57,11 +60,3 @@ export interface ConnectionInnerState {
 
 export type Logger = (...str) => void;
 
-export enum ConnectionStatus {
-    INITIAL = "INITIAL",
-    CREATED = "CREATED",
-    RECREATED = "RECREATED",
-    CONNECTING = "CONNECTING",
-    CONNECTED = "CONNECTED",
-    ERROR = "ERROR"
-}

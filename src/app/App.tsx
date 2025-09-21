@@ -11,7 +11,7 @@ export function App() {
         <ButtonsPanel/>
         <div>
             <User tracks={mss.getActualTracks(true)} connection={"self"} />
-            {otherUsers.map(user => <User key={user.userId} tracks={user.tracks} connection={user.status}/>)}
+            {otherUsers.map(user => <User key={user.userId} status={user.remoteAudio+";"+user.remoteVideo} tracks={user.tracks} connection={user.status}/>)}
         </div>
     </div>
 }

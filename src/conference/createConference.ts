@@ -157,7 +157,11 @@ export function createConference(): Conference {
             conference.onChange([user])
         };
 
-
+        user.connection.mediaStateChanged = (state) => {
+            user.remoteVideo = state.video;
+            user.remoteAudio = state.audio;
+            conference.onChange([user])
+        };
     }
 
     return conference;

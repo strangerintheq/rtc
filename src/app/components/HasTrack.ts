@@ -1,3 +1,4 @@
 export type HasTrack = {
-    track: MediaStreamTrack
+    track: MediaStreamTrack;
+    enabled: boolean;
 };

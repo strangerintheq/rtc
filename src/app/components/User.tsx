@@ -1,11 +1,12 @@
-import React, {memo} from "react";
+import React, {memo, useEffect, useRef} from "react";
 import {HasTrack} from "./HasTrack";
 import {AudioTrack} from "./AudioTrack";
 import {VideoTrack} from "./VideoTrack";
 
-export const User = memo(({tracks, connection}: { tracks: MediaStreamTrack[], connection: string }) => {
+export const User = memo(({tracks, connection, status}: { status?:string; tracks: MediaStreamTrack[], connection: string }) => {
+
     return <div style={{border: "1px solid black", width: 300, minHeight: 200}}>
-        <div>tracks: {tracks.length} connection: {connection}</div>
+        <div>{status} connection: {connection}</div>
         {tracks.map(track => <Track track={track} key={track.id}/>)}
     </div>;
 });
